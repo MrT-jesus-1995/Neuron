@@ -27,7 +27,7 @@ colors = [255, 0, 0; % Red
           0, 0, 0]; % Black
 colorStrings = {'RED', 'GREEN', 'BLUE', 'BLACK'};
 colorStringsThai = {'แดง', 'เขียว', 'ฟ้า', 'ดำ'}; % Thai color strings
-
+colorStringsMix = {colorStrings,colorStringsThai};
 
 % Define correct responses based on key mappings
 correctResponses = {'1!', '2@', '3#', '4$'}; % Key mappings for colors
@@ -46,17 +46,17 @@ numCongruentTrials = 20;
 
 % Run congruent trials
 for trial = 1:numCongruentTrials
-    runCongruentTrial(win, winWidth, winHeight, trial, numCongruentTrials, colors, colorStrings, correctResponses, p.rspdeadline);
+    runCongruentTrial(win, winWidth, winHeight, trial, numCongruentTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline);
 end
 
 % Run incongruent trials
 for trial = 1:numInconguentTrials
-    runInconguentTrial(win, winWidth, winHeight, trial, numInconguentTrials, colors, colorStrings, correctResponses, p.rspdeadline);
+    runInconguentTrial(win, winWidth, winHeight, trial, numInconguentTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline);
 end
 
 % Run incongruent trials
 for trial = 1:numInconguentTrials
-    runInconguentTrial(win, winWidth, winHeight, trial, numInconguentTrials, colors, colorStrings, correctResponses, p.rspdeadline);
+    runInconguentTrial(win, winWidth, winHeight, trial, numInconguentTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline);
 end
 
 % Clean up
@@ -64,16 +64,16 @@ ListenChar(0);
 sca;
 
 %% Function to run incongruent trials
-function runInconguentTrial(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, correctResponses, rspdeadline)
+function runInconguentTrial(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, colorStringsThai, correctResponses, rspdeadline)
    
     % Display trial number
     Screen('TextSize', win, 36);
     DrawFormattedText(win, sprintf('Trial %d / %d', trialNum, totalTrials), 'center', winHeight - 50, [255 255 255]);
     
-    % Randomly select color word and ink color, ensuring they are different
+     % Randomly select color word and ink color, ensuring they are different
     wordIndex = randi(length(colorStrings));
     inkIndex = randi(size(colors, 1));
-    while inkIndex == wordIndexs
+    while inkIndex == wordIndex % Fix the typo here (wordIndex instead of wordIndexs)
         inkIndex = randi(size(colors, 1));
     end
 
@@ -106,7 +106,11 @@ function runInconguentTrial(win, winWidth, winHeight, trialNum, totalTrials, col
             end
         end
     end
-    
+
+     % Show the answer color and the key pressed
+   if keyPressed
+        fprintf('Answer Color: %s, Key Pressed: %s\n', colorStrings{inkIndex}, pressedKey);
+    end
     % Handle response
     if keyPressed
         % Get the index of the pressed key in correctResponses
@@ -132,15 +136,12 @@ function runInconguentTrial(win, winWidth, winHeight, trialNum, totalTrials, col
         fprintf('Trial %d: No response\n', trialNum);
     end
     
-    % Show the answer color and the key pressed
-    fprintf('Answer Color: %s, Key Pressed: %s\n', colorStrings{inkIndex}, pressedKey);
-    
     % Pause briefly before next trial
     WaitSecs(0.5);
 end
 
 %% Function to run congruent trials
-function runCongruentTrial(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, correctResponses, rspdeadline)
+function runCongruentTrial(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, colorStringsThai, correctResponses, rspdeadline)
     % Display trial number
     Screen('TextSize', win, 36);
     DrawFormattedText(win, sprintf('Trial %d / %d', trialNum, totalTrials), 'center', winHeight - 50, [255 255 255]);
@@ -178,6 +179,11 @@ function runCongruentTrial(win, winWidth, winHeight, trialNum, totalTrials, colo
             end
         end
     end
+
+   % Show the answer color and the key pressed
+   if keyPressed
+        fprintf('Answer Color: %s, Key Pressed: %s\n', colorStrings{inkIndex}, pressedKey);
+    end
     
     % Handle response
     if keyPressed
@@ -202,10 +208,7 @@ function runCongruentTrial(win, winWidth, winHeight, trialNum, totalTrials, colo
    else
        % No response detected within response deadline
        fprintf('Trial %d: No response\n', trialNum);
-   end
-   
-   % Show the answer color and the key pressed
-   fprintf('Answer Color: %s, Key Pressed: %s\n', colorStrings{inkIndex}, pressedKey);
+    end
    
    % Pause briefly before next trial
    WaitSecs(0.5);
