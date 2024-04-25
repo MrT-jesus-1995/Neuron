@@ -1,6 +1,6 @@
 % Get subject info
-prompt = {'Subject', 'Session', 'Block', 'Sex', 'Hand', 'Age', 'Deadline (0.2-2; start 0.6)', 'EEG or not'};
-defAns = {'10001', '1', '1', 'f', 'r', '39', '2', '0'};
+prompt = {'Subject', 'Session', 'Block', 'Sex', 'Age', 'Deadline (0.2-5; start 0.6)', 'EEG or not'};
+defAns = {'10001', '1', '1', 'f', '39', '3', '0'};
 box = inputdlg(prompt, 'Enter Subject Information...', 1, defAns);
 
 if isempty(box) % Check if the user canceled input
@@ -11,10 +11,15 @@ p.subNum = str2double(box{1});
 p.session_num = str2double(box{2});
 p.runNum = str2double(box{3});
 p.sex = box{4};
-p.hand = box{5};
-p.age = str2double(box{6});
-p.rspdeadline = str2double(box{7});
-p.EEG = str2double(box{8});
+p.age = str2double(box{5});
+p.rspdeadline = str2double(box{6});
+p.EEG = str2double(box{7});
+
+% Validate response deadline
+if p.rspdeadline < 0.2 || p.rspdeadline > 5
+    errordlg('Response deadline must be between 0.2 and 5 seconds.');
+    return;
+end
 
 %% Serial Port connecting
 if p.EEG == 1
@@ -44,9 +49,19 @@ if exist(fName,'file')
     ListenChar(0);
     return
 end
-% Enable UTF-8 character encoding
-feature('DefaultCharacterSet', 'UTF8');
 
+%% load sound
+%[x, countdownsound] = audioread(strcat(p.root, '/sound/Mario_Kart_Race_Start_-_Sound_Effect_HD.mp3')); 
+%[y, rightsound] = audioread(strcat(p.root, '/sound/right.mp3')); 
+
+abortKey = KbName('q');
+%% load images
+tgfolder = pwd;
+
+FlushEvents;
+% Enable UTF-8 character encoding
+fontFile = 'Downloads\Niramit';
+feature('DefaultCharacterSet', 'UTF8');
 
 % Define colors and color strings
 colors = [255, 0, 0; % Red
@@ -69,71 +84,367 @@ screen = max(Screen('Screens'));
 
 % Run trials
 numTrials = 60;
-numInconguentTrials = 20;
-numCongruentTrials = 20;
+numInconguentTrials = 5;
+numCongruentTrials = 5;
+numMixTrials=5
+% Proportion of incongruent trials (adjust as needed)
+propIncongruent = 0.5; % 50% incongruent trials
 
-% Run congruent trials
-for trial = 1:numCongruentTrials
-    runCongruentTrial(win, winWidth, winHeight, trial, numCongruentTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline);
-end
+% Calculate number of congruent and incongruent trials
+numCongruentTrials = round(numTrials * (1 - propIncongruent));
+numIncongruentTrials = round(numTrials * propIncongruent);
+
+trialData = cell(numTrials, 5); % Change 4 to the number of fields you want to store
+
+% init
+init1 = imread([tgfolder, '/image/TF.png']);
+init2 = imread([tgfolder, '/image/TF (2).png']);
+init3 = imread([tgfolder, '/image/TF (3).png']);
+init1 = Screen('MakeTexture', win, init1);
+init2 = Screen('MakeTexture', win, init2);
+init3 = Screen('MakeTexture', win, init3);
+size(init1)
+
+
+% Display the start page
+Screen('DrawTexture', win, init1, [], [], []); % Display the first image
+Screen('Flip', win);
+KbStrokeWait;
+Screen('DrawTexture', win, init2, [], [], []); % Display the second image
+Screen('Flip', win);
+KbStrokeWait;
+Screen('DrawTexture', win, init3, [], [], []); % Display the third image
+Screen('Flip', win);
+
+
+% Wait for a key press to continue
+KbStrokeWait;
+
+% Run congruent trials  
+%for trial = 1:numCongruentTrials
+%    trialData = runCongruentTrial(win, winWidth, winHeight, trial, numCongruentTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline, trialData, p);
+%end
 
 % Run incongruent trials
-for trial = 1:numInconguentTrials
-    runInconguentTrial(win, winWidth, winHeight, trial, numInconguentTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline);
+%for trial = 1:numInconguentTrials
+%    trialData = runIncongruentTrial(win, winWidth, winHeight, trial, numInconguentTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline, trialData, p);
+%end
+
+% RUN MIX trials
+for trial = 1:numMixTrials
+
+  % Randomly choose between congruent or incongruent trial
+  congruentTrial = rand < (1 - propIncongruent);
+  
+  % Call appropriate trial function based on congruency
+  if congruentTrial
+    trialData = runCongruentTrial(win, winWidth, winHeight, trial, numMixTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline, trialData, p);
+  else
+    trialData = runIncongruentTrial(win, winWidth, winHeight, trial, numMixTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline, trialData, p);
+  end
+  
 end
 
-% Run incongruent trials
-for trial = 1:numInconguentTrials
-    runInconguentTrial(win, winWidth, winHeight, trial, numInconguentTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline);
+% RUN MIXEN trials
+for trial = 1:numMixTrials
+
+  % Randomly choose between congruent or incongruent trial
+  congruentTrial = rand < (1 - propIncongruent);
+  
+  % Call appropriate trial function based on congruency
+  if congruentTrial
+    trialData = runCongruentTrialEN(win, winWidth, winHeight, trial, numMixTrials, colors, colorStrings, correctResponses, p.rspdeadline, trialData, p);
+  else
+    trialData = runIncongruentTrialEN(win, winWidth, winHeight, trial, numMixTrials, colors, colorStrings, correctResponses, p.rspdeadline, trialData, p);
+  end
+  
 end
+
+% RUN MIXTH trials
+for trial = 1:numMixTrials
+
+  % Randomly choose between congruent or incongruent trial
+  congruentTrial = rand < (1 - propIncongruent);
+  
+  % Call appropriate trial function based on congruency
+  if congruentTrial
+    trialData = runCongruentTrialTH(win, winWidth, winHeight, trial, numMixTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline, trialData, p);
+  else
+    trialData = runIncongruentTrialTH(win, winWidth, winHeight, trial, numMixTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline, trialData, p);
+  end
+  
+end
+
+% Run incongruentEN trials
+%for trial = 1:numInconguentTrials
+%    trialData = runIncongruentTrialEN(win, winWidth, winHeight, trial, numInconguentTrials, colors, colorStrings, correctResponses, p.rspdeadline, trialData, p);
+%end
+
+% Run congruentEN trials
+%for trial = 1:numCongruentTrials
+%    trialData = runCongruentTrialEN(win, winWidth, winHeight, trial, numCongruentTrials, colors, colorStrings, correctResponses, p.rspdeadline, trialData, p);
+%end
+
+% Run incongruentTH trials
+%for trial = 1:numInconguentTrials
+%    trialData = runIncongruentTrialTH(win, winWidth, winHeight, trial, numInconguentTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline, trialData, p);
+%end
+
+% Run congruentTH trials
+%for trial = 1:numCongruentTrials
+%    trialData = runCongruentTrialTH(win, winWidth, winHeight, trial, numCongruentTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline, trialData, p);
+%end
+
+
+
+% Convert cell array to table
+trialTable = cell2table(trialData(1:end, :)); % Exclude header row
+
+% Set new headers for the table
+trialTable.Properties.VariableNames = {'Type', 'No', 'Color', 'Result', 'ResponseColor'};
+
+% Write trial data to CSV file
+csvFileName = [p.root, '/data/s', num2str(p.subNum), '/trial_data1.csv'];
+writetable(trialTable, 'C:\Users\Toddy\Downloads\StroopTaskmunk\data');
 
 % Clean up
 ListenChar(0);
 sca;
 
 %% Function to run incongruent trials
-function runInconguentTrial(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, colorStringsThai, correctResponses, rspdeadline)
-   
+function trialData = runIncongruentTrial(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, colorStringsThai, correctResponses, rspdeadline, trialData, p)
     % Display trial number
     Screen('TextSize', win, 36);
     DrawFormattedText(win, sprintf('Trial %d / %d', trialNum, totalTrials), 'center', winHeight - 50, [255 255 255]);
     
     % Randomly select color word (Thai or English) and ink color (ensure they are different)
-    wordIndex = randi(length(colorStrings) + length(colorStringsThai)); % Include both English and Thai strings
-    if wordIndex <= length(colorStrings)
+    randSelection = rand;
+    if randSelection < 0.5 % Randomly choose between English and Thai
+        wordIndex = randi(length(colorStrings) + length(colorStringsThai)); % Include both English and Thai strings
+        if wordIndex <= length(colorStrings)
+            wordString = colorStrings{wordIndex};  % Use English string
+        else
+            wordIndex = wordIndex - length(colorStrings);  % Adjust index for Thai strings
+            wordString = colorStringsThai{wordIndex};  % Use Thai string
+        end
+    else
+        wordIndex = randi(length(colorStrings) + length(colorStringsThai)); % Include both English and Thai strings
+        if wordIndex <= length(colorStrings)
+            wordString = colorStrings{wordIndex};  % Use English string
+        else
+            wordIndex = wordIndex - length(colorStrings);  % Adjust index for Thai strings
+            wordString = colorStringsThai{wordIndex};  % Use Thai string
+        end
+    end
+    
+    inkIndex = randi(size(colors, 1));
+    while inkIndex == wordIndex
+        inkIndex = randi(size(colors, 1));
+    end
+    
+    % Set text color based on ink color
+    textColor = colors(inkIndex, :); 
+    
+    % Display stimulus with text color
+    Screen('TextSize', win, 256);
+    Screen('TextFont', win, 'Cordia New');
+    Screen('TextColor', win, textColor);
+    Screen('TextStyle', win, 1);
+    DispText = double(typecast(unicode2native(wordString, 'utf-16le'), 'uint16'));
+    DrawFormattedText(win, DispText, 'center', 'center');
+    Screen('Flip', win);
+
+    % Record response time and accuracy
+    respStart = GetSecs;
+    keyPressed = false;
+    while GetSecs - respStart < p.rspdeadline
+        [keyIsDown, ~, keyCode] = KbCheck;
+        
+        if keyIsDown
+            pressedKey = KbName(keyCode);
+            
+            if any(strcmpi(pressedKey, correctResponses))
+                keyPressed = true;
+                break;
+            end
+        end
+    end
+
+    if keyPressed
+        fprintf('Answer Color: %s, Key Pressed: %s\n', colorStrings{inkIndex}, pressedKey);
+    end
+    
+   % Handle response
+    if keyPressed
+        % Get the index of the pressed key in correctResponses
+        responseIndex = find(strcmpi(pressedKey, correctResponses));
+
+        if ~isempty(responseIndex)
+            % Participant's response matches a correct response
+            % Get the correct color index corresponding to the response
+            correctColorIndex = responseIndex;
+
+            % Check if displayed color matches correct response
+            if correctColorIndex == inkIndex
+                fprintf('Trial %d: Correct\n', trialNum);
+                result = 'Correct'; 
+                responseColor = colorStrings{correctColorIndex};
+            else
+                fprintf('Trial %d: Incorrect (Color mismatch)\n', trialNum);
+                result = 'Incorrect';
+                responseColor = colorStrings{correctColorIndex}; 
+            end
+        else
+            % Participant'sresponse does not match any correct response
+           fprintf('Trial %d: Incorrect (Invalid response)\n', trialNum);
+           result = 'Invalid response';
+           responseColor = responseIndex;
+       end
+    else
+       % No response detected within response deadline
+       fprintf('Trial %d: No response\n', trialNum);
+       result  = 'No response';
+       responseColor = '-'; 
+    end
+
+    trialData{trialNum, 1} = 'Congruent'; % Mark trial type
+    trialData{trialNum, 2} = trialNum; % Trial number
+    trialData{trialNum, 3} = colorStrings{inkIndex}; % Store accuracy information
+    trialData{trialNum, 4} = result; % Store ink color index
+    trialData{trialNum, 5} = responseColor; % Store accuracy information
+    % Pause briefly before next trial
+    WaitSecs(0.5);
+end
+
+% Function to run congruent trials
+function trialData = runCongruentTrial(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, colorStringsThai, correctResponses, rspdeadline, trialData, p)
+    % Display trial number
+    Screen('TextSize', win, 36);
+    DrawFormattedText(win, sprintf('Trial %d / %d', trialNum, totalTrials), 'center', winHeight - 50, [255 255 255]);
+
+    % Randomly select color word (Thai or English) and ink color (ensure they are the same)
+    randSelection = rand;
+    
+    if randSelection < 0.5 % Randomly choose between English and Thai
+        wordIndex = randi(length(colorStrings)); % Select English color word index
         wordString = colorStrings{wordIndex};  % Use English string
     else
-        wordIndex = wordIndex - length(colorStrings);  % Adjust index for Thai strings
+        wordIndex = randi(length(colorStringsThai)); % Select Thai color word index
         wordString = colorStringsThai{wordIndex};  % Use Thai string
     end
+    
+    inkIndex = wordIndex; % Ensure ink color matches word color
+    
+    % Set text color based on ink color
+    textColor = colors(inkIndex, :); 
+    
+    % Display stimulus with text color
+    Screen('TextSize', win, 256);
+    Screen('TextFont', win, 'Cordia New');
+    Screen('TextColor', win, textColor);
+    Screen('TextStyle', win, 1);
+    DispText = double(typecast(unicode2native(wordString, 'utf-16le'), 'uint16'));
+    DrawFormattedText(win, DispText, 'center', 'center');
+    Screen('Flip', win);
+
+    % Record response time and accuracy
+    respStart = GetSecs;
+    keyPressed = false;
+    while GetSecs - respStart < p.rspdeadline
+        [keyIsDown, ~, keyCode] = KbCheck;
+        
+        if keyIsDown
+            pressedKey = KbName(keyCode);
+            
+            if any(strcmpi(pressedKey, correctResponses))
+                keyPressed = true;
+                break;
+            end
+        end
+    end
+
+    if keyPressed
+        fprintf('Answer Color: %s, Key Pressed: %s\n', colorStrings{inkIndex}, pressedKey);
+    end
+    
+  % Handle response
+    if keyPressed
+        % Get the index of the pressed key in correctResponses
+        responseIndex = find(strcmpi(pressedKey, correctResponses));
+
+        if ~isempty(responseIndex)
+            % Participant's response matches a correct response
+            % Get the correct color index corresponding to the response
+            correctColorIndex = responseIndex;
+
+            % Check if displayed color matches correct response
+            if correctColorIndex == inkIndex
+                fprintf('Trial %d: Correct\n', trialNum);
+                result = 'Correct'; 
+                responseColor = colorStrings{correctColorIndex};
+            else
+                fprintf('Trial %d: Incorrect (Color mismatch)\n', trialNum);
+                result = 'Incorrect';
+                responseColor = colorStrings{correctColorIndex}; 
+            end
+        else
+            % Participant'sresponse does not match any correct response
+           fprintf('Trial %d: Incorrect (Invalid response)\n', trialNum);
+           result = 'Invalid response';
+           responseColor = responseIndex;
+       end
+    else
+       % No response detected within response deadline
+       fprintf('Trial %d: No response\n', trialNum);
+       result  = 'No response';
+       responseColor = '-'; 
+    end
+
+    trialData{trialNum, 1} = 'Congruent'; % Mark trial type
+    trialData{trialNum, 2} = trialNum; % Trial number
+    trialData{trialNum, 3} = colorStrings{inkIndex}; % Store accuracy information
+    trialData{trialNum, 4} = result; % Store ink color index
+    trialData{trialNum, 5} = responseColor; % Store accuracy information
+    % Pause briefly before next trial
+    WaitSecs(0.5);
+end
+
+%% Function to run incongruent trials
+function trialData = runIncongruentTrialEN(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, correctResponses, rspdeadline, trialData, p)
+    % Display trial number
+    Screen('TextSize', win, 36);
+    DrawFormattedText(win, sprintf('Trial %d / %d', trialNum, totalTrials), 'center', winHeight - 50, [255 255 255]);
+
+    % Select color word (English) and ink color (ensure they are different)
+    wordIndex = randi(length(colorStrings));
+    wordString = colorStrings{wordIndex};
+
     inkIndex = randi(size(colors, 1));
     while inkIndex == wordIndex
         inkIndex = randi(size(colors, 1));
     end
 
     % Set text color based on ink color
-    textColor = colors(inkIndex, :); 
-    
+    textColor = colors(inkIndex, :);
+
     % Display stimulus with text color
     Screen('TextSize', win, 256);
-    Screen('TextFont', win, 'Arial');
-    % Set the text color and alpha-blending for smooth rendering
+    Screen('TextFont', win, 'Cordia New');
     Screen('TextColor', win, textColor);
     Screen('TextStyle', win, 1);
-    DrawFormattedText(win, colorStrings{wordIndex}, 'center', 'center');
+    DispText = double(typecast(unicode2native(wordString, 'utf-16le'), 'uint16'));
+    DrawFormattedText(win, DispText, 'center', 'center');
     Screen('Flip', win);
 
     % Record response time and accuracy
     respStart = GetSecs;
     keyPressed = false;
-    while GetSecs - respStart < rspdeadline
+    while GetSecs - respStart < p.rspdeadline
         [keyIsDown, ~, keyCode] = KbCheck;
-        
+
         if keyIsDown
-            % Get the name of the key that is pressed
             pressedKey = KbName(keyCode);
-            
-            % Check if any of the correctResponses match the pressed key
+
             if any(strcmpi(pressedKey, correctResponses))
                 keyPressed = true;
                 break;
@@ -141,11 +452,11 @@ function runInconguentTrial(win, winWidth, winHeight, trialNum, totalTrials, col
         end
     end
 
-     % Show the answer color and the key pressed
-   if keyPressed
+    if keyPressed
         fprintf('Answer Color: %s, Key Pressed: %s\n', colorStrings{inkIndex}, pressedKey);
     end
-    % Handle response
+
+% Handle response
     if keyPressed
         % Get the index of the pressed key in correctResponses
         responseIndex = find(strcmpi(pressedKey, correctResponses));
@@ -158,55 +469,67 @@ function runInconguentTrial(win, winWidth, winHeight, trialNum, totalTrials, col
             % Check if displayed color matches correct response
             if correctColorIndex == inkIndex
                 fprintf('Trial %d: Correct\n', trialNum);
+                result = 'Correct'; 
+                responseColor = colorStrings{correctColorIndex};
             else
                 fprintf('Trial %d: Incorrect (Color mismatch)\n', trialNum);
+                result = 'Incorrect';
+                responseColor = colorStrings{correctColorIndex}; 
             end
         else
-            % Participant's response does not match any correct response
-            fprintf('Trial %d: Incorrect (Invalid response)\n', trialNum);
-        end
+            % Participant'sresponse does not match any correct response
+           fprintf('Trial %d: Incorrect (Invalid response)\n', trialNum);
+           result = 'Invalid response';
+           responseColor = responseIndex;
+       end
     else
-        % No response detected within response deadline
-        fprintf('Trial %d: No response\n', trialNum);
+       % No response detected within response deadline
+       fprintf('Trial %d: No response\n', trialNum);
+       result  = 'No response';
+       responseColor = '-'; 
     end
-    
+
+    trialData{trialNum, 1} = 'Congruent'; % Mark trial type
+    trialData{trialNum, 2} = trialNum; % Trial number
+    trialData{trialNum, 3} = colorStrings{inkIndex}; % Store accuracy information
+    trialData{trialNum, 4} = result; % Store ink color index
+    trialData{trialNum, 5} = responseColor; % Store accuracy information
     % Pause briefly before next trial
     WaitSecs(0.5);
 end
 
 %% Function to run congruent trials
-function runCongruentTrial(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, colorStringsThai, correctResponses, rspdeadline)
+function trialData = runCongruentTrialEN(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, correctResponses, rspdeadline, trialData, p)
     % Display trial number
     Screen('TextSize', win, 36);
     DrawFormattedText(win, sprintf('Trial %d / %d', trialNum, totalTrials), 'center', winHeight - 50, [255 255 255]);
-    
-    % Randomly select color word and ink color, ensuring they are the same
+
+    % Select color word (English) and ink color (ensure they are the same)
     wordIndex = randi(length(colorStrings));
-    inkIndex = wordIndex;
+    wordString = colorStrings{wordIndex};
+    inkIndex = wordIndex; % Ensure ink color matches word color
 
     % Set text color based on ink color
-    textColor = colors(inkIndex, :); 
-    
+    textColor = colors(inkIndex, :);
+
     % Display stimulus with text color
     Screen('TextSize', win, 256);
-    Screen('TextFont', win, 'Arial');
-    % Set the text color and alpha-blending for smooth rendering
+    Screen('TextFont', win, 'Cordia New');
     Screen('TextColor', win, textColor);
     Screen('TextStyle', win, 1);
-    DrawFormattedText(win, colorStrings{wordIndex}, 'center', 'center');
+    DispText = double(typecast(unicode2native(wordString, 'utf-16le'), 'uint16'));
+    DrawFormattedText(win, DispText, 'center', 'center');
     Screen('Flip', win);
 
     % Record response time and accuracy
     respStart = GetSecs;
     keyPressed = false;
-    while GetSecs - respStart < rspdeadline
+    while GetSecs - respStart < p.rspdeadline
         [keyIsDown, ~, keyCode] = KbCheck;
-        
+
         if keyIsDown
-            % Get the name of the key that is pressed
             pressedKey = KbName(keyCode);
-            
-            % Check if any of the correctResponses match the pressed key
+
             if any(strcmpi(pressedKey, correctResponses))
                 keyPressed = true;
                 break;
@@ -214,12 +537,11 @@ function runCongruentTrial(win, winWidth, winHeight, trialNum, totalTrials, colo
         end
     end
 
-   % Show the answer color and the key pressed
-   if keyPressed
+    if keyPressed
         fprintf('Answer Color: %s, Key Pressed: %s\n', colorStrings{inkIndex}, pressedKey);
     end
-    
-    % Handle response
+
+       % Handle response
     if keyPressed
         % Get the index of the pressed key in correctResponses
         responseIndex = find(strcmpi(pressedKey, correctResponses));
@@ -232,18 +554,209 @@ function runCongruentTrial(win, winWidth, winHeight, trialNum, totalTrials, colo
             % Check if displayed color matches correct response
             if correctColorIndex == inkIndex
                 fprintf('Trial %d: Correct\n', trialNum);
+                result = 'Correct'; 
+                responseColor = colorStrings{correctColorIndex};
             else
                 fprintf('Trial %d: Incorrect (Color mismatch)\n', trialNum);
+                result = 'Incorrect';
+                responseColor = colorStrings{correctColorIndex}; 
             end
         else
             % Participant'sresponse does not match any correct response
            fprintf('Trial %d: Incorrect (Invalid response)\n', trialNum);
+           result = 'Invalid response';
+           responseColor = responseIndex;
        end
-   else
+    else
        % No response detected within response deadline
        fprintf('Trial %d: No response\n', trialNum);
+       result  = 'No response';
+       responseColor = '-'; 
     end
-   
-   % Pause briefly before next trial
-   WaitSecs(0.5);
+
+    trialData{trialNum, 1} = 'Congruent'; % Mark trial type
+    trialData{trialNum, 2} = trialNum; % Trial number
+    trialData{trialNum, 3} = colorStrings{inkIndex}; % Store accuracy information
+    trialData{trialNum, 4} = result; % Store ink color index
+    trialData{trialNum, 5} = responseColor; % Store accuracy information
+    % Pause briefly before next trial
+    WaitSecs(0.5);
 end
+
+%% Function to run incongruent trials
+function trialData = runIncongruentTrialTH(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, colorStringsThai, correctResponses, rspdeadline, trialData, p)
+    % Display trial number
+    Screen('TextSize', win, 36);
+    DrawFormattedText(win, sprintf('Trial %d / %d', trialNum, totalTrials), 'center', winHeight - 50, [255 255 255]);
+
+    % Select color word (English) and ink color (ensure they are different)
+    wordIndex = randi(length(colorStringsThai));
+    wordString = colorStringsThai{wordIndex};
+
+    inkIndex = randi(size(colors, 1));
+    while inkIndex == wordIndex
+        inkIndex = randi(size(colors, 1));
+    end
+
+    % Set text color based on ink color
+    textColor = colors(inkIndex, :);
+
+    % Display stimulus with text color
+    Screen('TextSize', win, 256);
+    Screen('TextFont', win, 'Cordia New');
+    Screen('TextColor', win, textColor);
+    Screen('TextStyle', win, 1);
+    DispText = double(typecast(unicode2native(wordString, 'utf-16le'), 'uint16'));
+    DrawFormattedText(win, DispText, 'center', 'center');
+    Screen('Flip', win);
+
+    % Record response time and accuracy
+    respStart = GetSecs;
+    keyPressed = false;
+    while GetSecs - respStart < p.rspdeadline
+        [keyIsDown, ~, keyCode] = KbCheck;
+
+        if keyIsDown
+            pressedKey = KbName(keyCode);
+
+            if any(strcmpi(pressedKey, correctResponses))
+                keyPressed = true;
+                break;
+            end
+        end
+    end
+
+    if keyPressed
+        fprintf('Answer Color: %s, Key Pressed: %s\n', colorStrings{inkIndex}, pressedKey);
+    end
+
+     % Handle response
+    if keyPressed
+        % Get the index of the pressed key in correctResponses
+        responseIndex = find(strcmpi(pressedKey, correctResponses));
+
+        if ~isempty(responseIndex)
+            % Participant's response matches a correct response
+            % Get the correct color index corresponding to the response
+            correctColorIndex = responseIndex;
+
+            % Check if displayed color matches correct response
+            if correctColorIndex == inkIndex
+                fprintf('Trial %d: Correct\n', trialNum);
+                result = 'Correct'; 
+                responseColor = colorStrings{correctColorIndex};
+            else
+                fprintf('Trial %d: Incorrect (Color mismatch)\n', trialNum);
+                result = 'Incorrect';
+                responseColor = colorStrings{correctColorIndex}; 
+            end
+        else
+            % Participant'sresponse does not match any correct response
+           fprintf('Trial %d: Incorrect (Invalid response)\n', trialNum);
+           result = 'Invalid response';
+           responseColor = responseIndex;
+       end
+    else
+       % No response detected within response deadline
+       fprintf('Trial %d: No response\n', trialNum);
+       result  = 'No response';
+       responseColor = '-'; 
+    end
+
+    trialData{trialNum, 1} = 'Congruent'; % Mark trial type
+    trialData{trialNum, 2} = trialNum; % Trial number
+    trialData{trialNum, 3} = colorStrings{inkIndex}; % Store accuracy information
+    trialData{trialNum, 4} = result; % Store ink color index
+    trialData{trialNum, 5} = responseColor; % Store accuracy information
+    % Pause briefly before next trial
+    WaitSecs(0.5);
+end
+
+%% Function to run congruent trials
+function trialData = runCongruentTrialTH(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, colorStringsThai, correctResponses, rspdeadline, trialData, p)
+    % Display trial number
+    Screen('TextSize', win, 36);
+    DrawFormattedText(win, sprintf('Trial %d / %d', trialNum, totalTrials), 'center', winHeight - 50, [255 255 255]);
+
+    % Select color word (English) and ink color (ensure they are the same)
+    wordIndex = randi(length(colorStringsThai));
+    wordString = colorStringsThai{wordIndex};
+    inkIndex = wordIndex; % Ensure ink color matches word color
+
+    % Set text color based on ink color
+    textColor = colors(inkIndex, :);
+
+    % Display stimulus with text color
+    Screen('TextSize', win, 256);
+    Screen('TextFont', win, 'Cordia New');
+    Screen('TextColor', win, textColor);
+    Screen('TextStyle', win, 1);
+    DispText = double(typecast(unicode2native(wordString, 'utf-16le'), 'uint16'));
+    DrawFormattedText(win, DispText, 'center', 'center');
+    Screen('Flip', win);
+
+    % Record response time and accuracy
+    respStart = GetSecs;
+    keyPressed = false;
+    while GetSecs - respStart < p.rspdeadline
+        [keyIsDown, ~, keyCode] = KbCheck;
+
+        if keyIsDown
+            pressedKey = KbName(keyCode);
+
+            if any(strcmpi(pressedKey, correctResponses))
+                keyPressed = true;
+                break;
+            end
+        end
+    end
+
+    if keyPressed
+        fprintf('Answer Color: %s, Key Pressed: %s\n', colorStrings{inkIndex}, pressedKey);
+    end
+
+       % Handle response
+    if keyPressed
+        % Get the index of the pressed key in correctResponses
+        responseIndex = find(strcmpi(pressedKey, correctResponses));
+
+        if ~isempty(responseIndex)
+            % Participant's response matches a correct response
+            % Get the correct color index corresponding to the response
+            correctColorIndex = responseIndex;
+
+            % Check if displayed color matches correct response
+            if correctColorIndex == inkIndex
+                fprintf('Trial %d: Correct\n', trialNum);
+                result = 'Correct'; 
+                responseColor = colorStrings{correctColorIndex};
+            else
+                fprintf('Trial %d: Incorrect (Color mismatch)\n', trialNum);
+                result = 'Incorrect';
+                responseColor = colorStrings{correctColorIndex}; 
+            end
+        else
+            % Participant'sresponse does not match any correct response
+           fprintf('Trial %d: Incorrect (Invalid response)\n', trialNum);
+           result = 'Invalid response';
+           responseColor = responseIndex;
+       end
+    else
+       % No response detected within response deadline
+       fprintf('Trial %d: No response\n', trialNum);
+       result  = 'No response';
+       responseColor = '-'; 
+    end
+
+    trialData{trialNum, 1} = 'Congruent'; % Mark trial type
+    trialData{trialNum, 2} = trialNum; % Trial number
+    trialData{trialNum, 3} = colorStrings{inkIndex}; % Store accuracy information
+    trialData{trialNum, 4} = result; % Store ink color index
+    trialData{trialNum, 5} = responseColor; % Store accuracy information
+    % Pause briefly before next trial
+    WaitSecs(0.5);
+end
+
+
+
+
