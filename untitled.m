@@ -52,6 +52,38 @@ feature('DefaultCharacterSet', 'UTF8');
 
 
 
+%% Serial Port connecting
+if p.EEG == 1
+    SerialPort = BioSemiSerialPort();
+end
+
+%%
+p.s = round(sum(100*clock));
+rand('state', p.s);
+
+%%
+ListenChar(2);
+
+% build an output file name and check to make sure that it does not exist already
+p.root = pwd;
+if ~exist([p.root, '/data/'], 'dir')
+    mkdir([p.root, '/data/']);
+end
+
+mkdir([p.root, '/data/s', num2str(p.subNum)]);
+fName = [p.root, '/data/s', num2str(p.subNum), '/flanker_allages_EEG' '_sbj',  num2str(p.subNum), '_session', num2str(p.session_num),  '_block', num2str(p.runNum), '.mat'];
+bName = [p.root, '/data/s', num2str(p.subNum), '/flanker_allages_EEG_code' '_sbj', num2str(p.subNum), '_session', num2str(p.session_num), '.mat'];
+
+if exist(fName,'file')
+    Screen('CloseAll');
+    msgbox('File name already exists, please specify another', 'modal');
+    ListenChar(0);
+    return
+end
+% Enable UTF-8 character encoding
+feature('DefaultCharacterSet', 'UTF8');
+
+
 % Define colors and color strings
 colors = [255, 0, 0; % Red
           0, 255, 0; % Green
@@ -78,17 +110,22 @@ numCongruentTrials = 20;
 
 % Run congruent trials
 for trial = 1:numCongruentTrials
+
     runCongruentTrial(win, winWidth, winHeight, trial, numCongruentTrials, colors, colorStrings, colorStringsThai, colorStringsMix, correctResponses, p.rspdeadline);
+
 end
 
 % Run incongruent trials
 for trial = 1:numInconguentTrials
+
     runInconguentTrial(win, winWidth, winHeight, trial, numInconguentTrials, colors, colorStrings, colorStringsThai, colorStringsMix, correctResponses, p.rspdeadline);
 end
 
 % Run incongruent trials
 for trial = 1:numInconguentTrials
+
     runInconguentTrial(win, winWidth, winHeight, trial, numInconguentTrials, colors, colorStrings, colorStringsThai, colorStringsMix, correctResponses, p.rspdeadline);
+
 end
 
 % Clean up
@@ -96,13 +133,16 @@ ListenChar(0);
 sca;
 
 %% Function to run incongruent trials
+
 function runInconguentTrial(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, colorStringsThai, colorStringsMix,correctResponses, rspdeadline)
+
    
     % Display trial number
     Screen('TextSize', win, 36);
     DrawFormattedText(win, sprintf('Trial %d / %d', trialNum, totalTrials), 'center', winHeight - 50, [255 255 255]);
     
     % Randomly select color word (Thai or English) and ink color (ensure they are different)
+
     randSelection = rand;
     disp(['Random Selection Value: ', num2str(randSelection)]);
     
@@ -202,7 +242,9 @@ function runInconguentTrial(win, winWidth, winHeight, trialNum, totalTrials, col
 end
 
 %% Function to run congruent trials
+
 function runCongruentTrial(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, colorStringsThai, colorStringsMix, correctResponses, rspdeadline)
+
     % Display trial number
     Screen('TextSize', win, 36);
     DrawFormattedText(win, sprintf('Trial %d / %d', trialNum, totalTrials), 'center', winHeight - 50, [255 255 255]);
