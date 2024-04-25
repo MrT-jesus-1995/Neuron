@@ -16,12 +16,18 @@ p.age = str2double(box{6});
 p.rspdeadline = str2double(box{7});
 p.EEG = str2double(box{8});
 
+% Enable UTF-8 character encoding
+feature('DefaultCharacterSet', 'UTF8');
+
+
 % Define colors and color strings
 colors = [255, 0, 0; % Red
           0, 255, 0; % Green
           0, 0, 255; % Blue
           0, 0, 0]; % Black
 colorStrings = {'RED', 'GREEN', 'BLUE', 'BLACK'};
+colorStringsThai = {'แดง', 'เขียว', 'ฟ้า', 'ดำ'}; % Thai color strings
+
 
 % Define correct responses based on key mappings
 correctResponses = {'1!', '2@', '3#', '4$'}; % Key mappings for colors
@@ -61,12 +67,13 @@ sca;
 function runInconguentTrial(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, correctResponses, rspdeadline)
    
     % Display trial number
+    Screen('TextSize', win, 36);
     DrawFormattedText(win, sprintf('Trial %d / %d', trialNum, totalTrials), 'center', winHeight - 50, [255 255 255]);
     
     % Randomly select color word and ink color, ensuring they are different
     wordIndex = randi(length(colorStrings));
     inkIndex = randi(size(colors, 1));
-    while inkIndex == wordIndex
+    while inkIndex == wordIndexs
         inkIndex = randi(size(colors, 1));
     end
 
@@ -135,6 +142,7 @@ end
 %% Function to run congruent trials
 function runCongruentTrial(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, correctResponses, rspdeadline)
     % Display trial number
+    Screen('TextSize', win, 36);
     DrawFormattedText(win, sprintf('Trial %d / %d', trialNum, totalTrials), 'center', winHeight - 50, [255 255 255]);
     
     % Randomly select color word and ink color, ensuring they are the same
