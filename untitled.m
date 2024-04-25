@@ -16,12 +16,46 @@ p.age = str2double(box{6});
 p.rspdeadline = str2double(box{7});
 p.EEG = str2double(box{8});
 
+%% Serial Port connecting
+if p.EEG == 1
+    SerialPort = BioSemiSerialPort();
+end
+
+%%
+p.s = round(sum(100*clock));
+rand('state', p.s);
+
+%%
+ListenChar(2);
+
+% build an output file name and check to make sure that it does not exist already
+p.root = pwd;
+if ~exist([p.root, '/data/'], 'dir')
+    mkdir([p.root, '/data/']);
+end
+
+mkdir([p.root, '/data/s', num2str(p.subNum)]);
+fName = [p.root, '/data/s', num2str(p.subNum), '/flanker_allages_EEG' '_sbj',  num2str(p.subNum), '_session', num2str(p.session_num),  '_block', num2str(p.runNum), '.mat'];
+bName = [p.root, '/data/s', num2str(p.subNum), '/flanker_allages_EEG_code' '_sbj', num2str(p.subNum), '_session', num2str(p.session_num), '.mat'];
+
+if exist(fName,'file')
+    Screen('CloseAll');
+    msgbox('File name already exists, please specify another', 'modal');
+    ListenChar(0);
+    return
+end
+% Enable UTF-8 character encoding
+feature('DefaultCharacterSet', 'UTF8');
+
+
 % Define colors and color strings
 colors = [255, 0, 0; % Red
           0, 255, 0; % Green
           0, 0, 255; % Blue
           0, 0, 0]; % Black
 colorStrings = {'RED', 'GREEN', 'BLUE', 'BLACK'};
+colorStringsThai = {'แดง', 'เขียว', 'ฟ้า', 'ดำ'}; % Thai color strings
+colorStringsMix = {colorStrings,colorStringsThai};
 
 % Define correct responses based on key mappings
 correctResponses = {'1!', '2@', '3#', '4$'}; % Key mappings for colors
@@ -40,17 +74,17 @@ numCongruentTrials = 20;
 
 % Run congruent trials
 for trial = 1:numCongruentTrials
-    runCongruentTrial(win, winWidth, winHeight, trial, numCongruentTrials, colors, colorStrings, correctResponses, p.rspdeadline);
+    runCongruentTrial(win, winWidth, winHeight, trial, numCongruentTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline);
 end
 
 % Run incongruent trials
 for trial = 1:numInconguentTrials
-    runInconguentTrial(win, winWidth, winHeight, trial, numInconguentTrials, colors, colorStrings, correctResponses, p.rspdeadline);
+    runInconguentTrial(win, winWidth, winHeight, trial, numInconguentTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline);
 end
 
 % Run incongruent trials
 for trial = 1:numInconguentTrials
-    runInconguentTrial(win, winWidth, winHeight, trial, numInconguentTrials, colors, colorStrings, correctResponses, p.rspdeadline);
+    runInconguentTrial(win, winWidth, winHeight, trial, numInconguentTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline);
 end
 
 % Clean up
@@ -58,13 +92,20 @@ ListenChar(0);
 sca;
 
 %% Function to run incongruent trials
-function runInconguentTrial(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, correctResponses, rspdeadline)
+function runInconguentTrial(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, colorStringsThai, correctResponses, rspdeadline)
    
     % Display trial number
+    Screen('TextSize', win, 36);
     DrawFormattedText(win, sprintf('Trial %d / %d', trialNum, totalTrials), 'center', winHeight - 50, [255 255 255]);
     
-    % Randomly select color word and ink color, ensuring they are different
-    wordIndex = randi(length(colorStrings));
+    % Randomly select color word (Thai or English) and ink color (ensure they are different)
+    wordIndex = randi(length(colorStrings) + length(colorStringsThai)); % Include both English and Thai strings
+    if wordIndex <= length(colorStrings)
+        wordString = colorStrings{wordIndex};  % Use English string
+    else
+        wordIndex = wordIndex - length(colorStrings);  % Adjust index for Thai strings
+        wordString = colorStringsThai{wordIndex};  % Use Thai string
+    end
     inkIndex = randi(size(colors, 1));
     while inkIndex == wordIndex
         inkIndex = randi(size(colors, 1));
@@ -99,7 +140,11 @@ function runInconguentTrial(win, winWidth, winHeight, trialNum, totalTrials, col
             end
         end
     end
-    
+
+     % Show the answer color and the key pressed
+   if keyPressed
+        fprintf('Answer Color: %s, Key Pressed: %s\n', colorStrings{inkIndex}, pressedKey);
+    end
     % Handle response
     if keyPressed
         % Get the index of the pressed key in correctResponses
@@ -125,16 +170,14 @@ function runInconguentTrial(win, winWidth, winHeight, trialNum, totalTrials, col
         fprintf('Trial %d: No response\n', trialNum);
     end
     
-    % Show the answer color and the key pressed
-    fprintf('Answer Color: %s, Key Pressed: %s\n', colorStrings{inkIndex}, pressedKey);
-    
     % Pause briefly before next trial
     WaitSecs(0.5);
 end
 
 %% Function to run congruent trials
-function runCongruentTrial(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, correctResponses, rspdeadline)
+function runCongruentTrial(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, colorStringsThai, correctResponses, rspdeadline)
     % Display trial number
+    Screen('TextSize', win, 36);
     DrawFormattedText(win, sprintf('Trial %d / %d', trialNum, totalTrials), 'center', winHeight - 50, [255 255 255]);
     
     % Randomly select color word and ink color, ensuring they are the same
@@ -170,6 +213,11 @@ function runCongruentTrial(win, winWidth, winHeight, trialNum, totalTrials, colo
             end
         end
     end
+
+   % Show the answer color and the key pressed
+   if keyPressed
+        fprintf('Answer Color: %s, Key Pressed: %s\n', colorStrings{inkIndex}, pressedKey);
+    end
     
     % Handle response
     if keyPressed
@@ -194,10 +242,7 @@ function runCongruentTrial(win, winWidth, winHeight, trialNum, totalTrials, colo
    else
        % No response detected within response deadline
        fprintf('Trial %d: No response\n', trialNum);
-   end
-   
-   % Show the answer color and the key pressed
-   fprintf('Answer Color: %s, Key Pressed: %s\n', colorStrings{inkIndex}, pressedKey);
+    end
    
    % Pause briefly before next trial
    WaitSecs(0.5);
