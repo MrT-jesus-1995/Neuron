@@ -86,15 +86,16 @@ screen = max(Screen('Screens'));
 numTrials = 60;
 numInconguentTrials = 5;
 numCongruentTrials = 5;
-numMixTrials=5
+numMixTrials = 5;
+numBlock = 5;
 % Proportion of incongruent trials (adjust as needed)
 propIncongruent = 0.5; % 50% incongruent trials
 
 % Calculate number of congruent and incongruent trials
-numCongruentTrials = round(numTrials * (1 - propIncongruent));
-numIncongruentTrials = round(numTrials * propIncongruent);
+numMixCongruentTrials = round(2 * (1 - propIncongruent));
+numMixIncongruentTrials = round(numInconguentTrials * propIncongruent);
 
-trialData = cell(numTrials, 5); % Change 4 to the number of fields you want to store
+trialData = cell(numTrials, 5); % Change 5 to the number of fields you want to store
 
 % init
 init1 = imread([tgfolder, '/image/TF.png']);
@@ -120,29 +121,70 @@ Screen('Flip', win);
 % Wait for a key press to continue
 KbStrokeWait;
 
+% Display countdown
+countdownTime = 3; % Set the countdown duration in seconds
+Screen('TextSize', win, 80); % Set text size for countdown
+Screen('TextFont', win, 'Arial'); % Set font for countdown
+for countdown = countdownTime:-1:1
+    DrawFormattedText(win, sprintf('%d', countdown), 'center', 'center', [255 255 255]); % Display countdown number
+    Screen('Flip', win);
+    WaitSecs(1); % Wait for 1 second
+end
+
+% Display "Go" message
+DrawFormattedText(win, 'Go', 'center', 'center', [255 255 255]);
+Screen('Flip', win);
+WaitSecs(1); % Wait for 1 second
+
 % Run congruent trials  
-%for trial = 1:numCongruentTrials
-%    trialData = runCongruentTrial(win, winWidth, winHeight, trial, numCongruentTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline, trialData, p);
-%end
+for trial = 1:numCongruentTrials
+    trialData = runCongruentTrial(win, winWidth, winHeight, trial, numCongruentTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline, trialData, p, numBlock);
+end
 
 % Run incongruent trials
-%for trial = 1:numInconguentTrials
-%    trialData = runIncongruentTrial(win, winWidth, winHeight, trial, numInconguentTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline, trialData, p);
-%end
+for trial = 1:numInconguentTrials
+    trialData = runIncongruentTrial(win, winWidth, winHeight, trial, numInconguentTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline, trialData, p, numBlock);
+numBlock = numBlock+1;
+end
+
+% Run incongruentEN trials
+for trial = 1:numInconguentTrials
+    trialData = runIncongruentTrialEN(win, winWidth, winHeight, trial, numInconguentTrials, colors, colorStrings, correctResponses, p.rspdeadline, trialData, p, numBlock);
+numBlock = numBlock+1;
+end
+
+% Run congruentEN trials
+for trial = 1:numCongruentTrials
+    trialData = runCongruentTrialEN(win, winWidth, winHeight, trial, numCongruentTrials, colors, colorStrings, correctResponses, p.rspdeadline, trialData, p, numBlock);
+numBlock = numBlock+1;
+end
+
+% Run incongruentTH trials
+for trial = 1:numInconguentTrials
+    trialData = runIncongruentTrialTH(win, winWidth, winHeight, trial, numInconguentTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline, trialData, p, numBlock);
+numBlock = numBlock+1;
+end
+
+% Run congruentTH trials
+for trial = 1:numCongruentTrials
+    trialData = runCongruentTrialTH(win, winWidth, winHeight, trial, numCongruentTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline, trialData, p, numBlock);
+numBlock = numBlock+1;
+end
 
 % RUN MIX trials
 for trial = 1:numMixTrials
 
   % Randomly choose between congruent or incongruent trial
-  congruentTrial = rand < (1 - propIncongruent);
+  numMixCongruentTrials = rand < (1 - propIncongruent);
   
   % Call appropriate trial function based on congruency
-  if congruentTrial
-    trialData = runCongruentTrial(win, winWidth, winHeight, trial, numMixTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline, trialData, p);
+if numMixCongruentTrials
+     trialData = runCongruentTrial(win, winWidth, winHeight, trial, numMixTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline, trialData, p, numBlock);
   else
-    trialData = runIncongruentTrial(win, winWidth, winHeight, trial, numMixTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline, trialData, p);
+     trialData = runIncongruentTrial(win, winWidth, winHeight, trial, numMixTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline, trialData, p, numBlock);
   end
-  
+  numBlock = numBlock+1;
+
 end
 
 % RUN MIXEN trials
@@ -152,50 +194,29 @@ for trial = 1:numMixTrials
   congruentTrial = rand < (1 - propIncongruent);
   
   % Call appropriate trial function based on congruency
-  if congruentTrial
-    trialData = runCongruentTrialEN(win, winWidth, winHeight, trial, numMixTrials, colors, colorStrings, correctResponses, p.rspdeadline, trialData, p);
+  if numMixCongruentTrials
+    trialData = runCongruentTrialEN(win, winWidth, winHeight, trial, numMixTrials, colors, colorStrings, correctResponses, p.rspdeadline, trialData, p, numBlock);
   else
-    trialData = runIncongruentTrialEN(win, winWidth, winHeight, trial, numMixTrials, colors, colorStrings, correctResponses, p.rspdeadline, trialData, p);
+    trialData = runIncongruentTrialEN(win, winWidth, winHeight, trial, numMixTrials, colors, colorStrings, correctResponses, p.rspdeadline, trialData, p, numBlock);
   end
-  
+  numBlock = numBlock+1;
 end
 
 % RUN MIXTH trials
 for trial = 1:numMixTrials
 
   % Randomly choose between congruent or incongruent trial
-  congruentTrial = rand < (1 - propIncongruent);
+ congruentTrial = rand < (1 - propIncongruent);
   
   % Call appropriate trial function based on congruency
-  if congruentTrial
-    trialData = runCongruentTrialTH(win, winWidth, winHeight, trial, numMixTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline, trialData, p);
+  if numMixCongruentTrials
+    trialData = runCongruentTrialTH(win, winWidth, winHeight, trial, numMixTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline, trialData, p, numBlock);
   else
-    trialData = runIncongruentTrialTH(win, winWidth, winHeight, trial, numMixTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline, trialData, p);
+    trialData = runIncongruentTrialTH(win, winWidth, winHeight, trial, numMixTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline, trialData, p, numBlock);
   end
+numBlock = numBlock+1;
   
 end
-
-% Run incongruentEN trials
-%for trial = 1:numInconguentTrials
-%    trialData = runIncongruentTrialEN(win, winWidth, winHeight, trial, numInconguentTrials, colors, colorStrings, correctResponses, p.rspdeadline, trialData, p);
-%end
-
-% Run congruentEN trials
-%for trial = 1:numCongruentTrials
-%    trialData = runCongruentTrialEN(win, winWidth, winHeight, trial, numCongruentTrials, colors, colorStrings, correctResponses, p.rspdeadline, trialData, p);
-%end
-
-% Run incongruentTH trials
-%for trial = 1:numInconguentTrials
-%    trialData = runIncongruentTrialTH(win, winWidth, winHeight, trial, numInconguentTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline, trialData, p);
-%end
-
-% Run congruentTH trials
-%for trial = 1:numCongruentTrials
-%    trialData = runCongruentTrialTH(win, winWidth, winHeight, trial, numCongruentTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline, trialData, p);
-%end
-
-
 
 % Convert cell array to table
 trialTable = cell2table(trialData(1:end, :)); % Exclude header row
@@ -205,14 +226,14 @@ trialTable.Properties.VariableNames = {'Type', 'No', 'Color', 'Result', 'Respons
 
 % Write trial data to CSV file
 csvFileName = [p.root, '/data/s', num2str(p.subNum), '/trial_data1.csv'];
-writetable(trialTable, 'C:\Users\Toddy\Downloads\StroopTaskmunk\data');
+writetable(trialTable, 'C:\Users\Toddy\Downloads\StroopTaskmunk\data\trial_data4.csv');
 
 % Clean up
 ListenChar(0);
 sca;
 
 %% Function to run incongruent trials
-function trialData = runIncongruentTrial(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, colorStringsThai, correctResponses, rspdeadline, trialData, p)
+function trialData = runIncongruentTrial(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, colorStringsThai, correctResponses, rspdeadline, trialData, p, numBlock)
     % Display trial number
     Screen('TextSize', win, 36);
     DrawFormattedText(win, sprintf('Trial %d / %d', trialNum, totalTrials), 'center', winHeight - 50, [255 255 255]);
@@ -307,17 +328,18 @@ function trialData = runIncongruentTrial(win, winWidth, winHeight, trialNum, tot
        responseColor = '-'; 
     end
 
-    trialData{trialNum, 1} = 'Congruent'; % Mark trial type
-    trialData{trialNum, 2} = trialNum; % Trial number
-    trialData{trialNum, 3} = colorStrings{inkIndex}; % Store accuracy information
-    trialData{trialNum, 4} = result; % Store ink color index
-    trialData{trialNum, 5} = responseColor; % Store accuracy information
+    trialData{trialNum+numBlock, 1} = 'InCongruent'; % Mark trial type
+    trialData{trialNum+numBlock, 2} = trialNum; % Trial number
+    trialData{trialNum+numBlock, 3} = colorStrings{inkIndex}; % Store accuracy information
+    trialData{trialNum+numBlock, 4} = result; % Store ink color index
+    trialData{trialNum+numBlock, 5} = responseColor; % Store accuracy information
+
     % Pause briefly before next trial
     WaitSecs(0.5);
 end
 
 % Function to run congruent trials
-function trialData = runCongruentTrial(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, colorStringsThai, correctResponses, rspdeadline, trialData, p)
+function trialData = runCongruentTrial(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, colorStringsThai, correctResponses, rspdeadline, trialData, p, numBlock)
     % Display trial number
     Screen('TextSize', win, 36);
     DrawFormattedText(win, sprintf('Trial %d / %d', trialNum, totalTrials), 'center', winHeight - 50, [255 255 255]);
@@ -410,7 +432,7 @@ function trialData = runCongruentTrial(win, winWidth, winHeight, trialNum, total
 end
 
 %% Function to run incongruent trials
-function trialData = runIncongruentTrialEN(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, correctResponses, rspdeadline, trialData, p)
+function trialData = runIncongruentTrialEN(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, correctResponses, rspdeadline, trialData, p, numBlock)
     % Display trial number
     Screen('TextSize', win, 36);
     DrawFormattedText(win, sprintf('Trial %d / %d', trialNum, totalTrials), 'center', winHeight - 50, [255 255 255]);
@@ -489,17 +511,17 @@ function trialData = runIncongruentTrialEN(win, winWidth, winHeight, trialNum, t
        responseColor = '-'; 
     end
 
-    trialData{trialNum, 1} = 'Congruent'; % Mark trial type
-    trialData{trialNum, 2} = trialNum; % Trial number
-    trialData{trialNum, 3} = colorStrings{inkIndex}; % Store accuracy information
-    trialData{trialNum, 4} = result; % Store ink color index
-    trialData{trialNum, 5} = responseColor; % Store accuracy information
+    trialData{trialNum+numBlock, 1} = 'InCongruentEN'; % Mark trial type
+    trialData{trialNum+numBlock, 2} = trialNum; % Trial number
+    trialData{trialNum+numBlock, 3} = colorStrings{inkIndex}; % Store accuracy information
+    trialData{trialNum+numBlock, 4} = result; % Store ink color index
+    trialData{trialNum+numBlock, 5} = responseColor; % Store accuracy information
     % Pause briefly before next trial
     WaitSecs(0.5);
 end
 
 %% Function to run congruent trials
-function trialData = runCongruentTrialEN(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, correctResponses, rspdeadline, trialData, p)
+function trialData = runCongruentTrialEN(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, correctResponses, rspdeadline, trialData, p, numBlock)
     % Display trial number
     Screen('TextSize', win, 36);
     DrawFormattedText(win, sprintf('Trial %d / %d', trialNum, totalTrials), 'center', winHeight - 50, [255 255 255]);
@@ -574,17 +596,17 @@ function trialData = runCongruentTrialEN(win, winWidth, winHeight, trialNum, tot
        responseColor = '-'; 
     end
 
-    trialData{trialNum, 1} = 'Congruent'; % Mark trial type
-    trialData{trialNum, 2} = trialNum; % Trial number
-    trialData{trialNum, 3} = colorStrings{inkIndex}; % Store accuracy information
-    trialData{trialNum, 4} = result; % Store ink color index
-    trialData{trialNum, 5} = responseColor; % Store accuracy information
+    trialData{trialNum+numBlock, 1} = 'CongruentEN'; % Mark trial type
+    trialData{trialNum+numBlock, 2} = trialNum; % Trial number
+    trialData{trialNum+numBlock, 3} = colorStrings{inkIndex}; % Store accuracy information
+    trialData{trialNum+numBlock, 4} = result; % Store ink color index
+    trialData{trialNum+numBlock, 5} = responseColor; % Store accuracy information
     % Pause briefly before next trial
     WaitSecs(0.5);
 end
 
 %% Function to run incongruent trials
-function trialData = runIncongruentTrialTH(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, colorStringsThai, correctResponses, rspdeadline, trialData, p)
+function trialData = runIncongruentTrialTH(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, colorStringsThai, correctResponses, rspdeadline, trialData, p, numBlock)
     % Display trial number
     Screen('TextSize', win, 36);
     DrawFormattedText(win, sprintf('Trial %d / %d', trialNum, totalTrials), 'center', winHeight - 50, [255 255 255]);
@@ -663,17 +685,17 @@ function trialData = runIncongruentTrialTH(win, winWidth, winHeight, trialNum, t
        responseColor = '-'; 
     end
 
-    trialData{trialNum, 1} = 'Congruent'; % Mark trial type
-    trialData{trialNum, 2} = trialNum; % Trial number
-    trialData{trialNum, 3} = colorStrings{inkIndex}; % Store accuracy information
-    trialData{trialNum, 4} = result; % Store ink color index
-    trialData{trialNum, 5} = responseColor; % Store accuracy information
+    trialData{trialNum+numBlock, 1} = 'InCongruentTH'; % Mark trial type
+    trialData{trialNum+numBlock, 2} = trialNum; % Trial number
+    trialData{trialNum+numBlock, 3} = colorStringsThai{inkIndex}; % Store accuracy information
+    trialData{trialNum+numBlock, 4} = result; % Store ink color index
+    trialData{trialNum+numBlock, 5} = responseColor; % Store accuracy information
     % Pause briefly before next trial
     WaitSecs(0.5);
 end
 
 %% Function to run congruent trials
-function trialData = runCongruentTrialTH(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, colorStringsThai, correctResponses, rspdeadline, trialData, p)
+function trialData = runCongruentTrialTH(win, winWidth, winHeight, trialNum, totalTrials, colors, colorStrings, colorStringsThai, correctResponses, rspdeadline, trialData, p, numBlock)
     % Display trial number
     Screen('TextSize', win, 36);
     DrawFormattedText(win, sprintf('Trial %d / %d', trialNum, totalTrials), 'center', winHeight - 50, [255 255 255]);
@@ -748,11 +770,11 @@ function trialData = runCongruentTrialTH(win, winWidth, winHeight, trialNum, tot
        responseColor = '-'; 
     end
 
-    trialData{trialNum, 1} = 'Congruent'; % Mark trial type
-    trialData{trialNum, 2} = trialNum; % Trial number
-    trialData{trialNum, 3} = colorStrings{inkIndex}; % Store accuracy information
-    trialData{trialNum, 4} = result; % Store ink color index
-    trialData{trialNum, 5} = responseColor; % Store accuracy information
+    trialData{trialNum+numBlock, 1} = 'CongruentTH'; % Mark trial type
+    trialData{trialNum+numBlock, 2} = trialNum; % Trial number
+    trialData{trialNum+numBlock, 3} = colorStringsThai{inkIndex}; % Store accuracy information
+    trialData{trialNum+numBlock, 4} = result; % Store ink color index
+    trialData{trialNum+numBlock, 5} = responseColor; % Store accuracy information
     % Pause briefly before next trial
     WaitSecs(0.5);
 end
