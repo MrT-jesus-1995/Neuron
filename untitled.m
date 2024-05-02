@@ -182,7 +182,7 @@ if numMixCongruentTrials
      trialData = runCongruentTrial(win, winWidth, winHeight, trial, numMixTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline, trialData, p, numBlock);
   else
      trialData = runIncongruentTrial(win, winWidth, winHeight, trial, numMixTrials, colors, colorStrings, colorStringsThai, correctResponses, p.rspdeadline, trialData, p, numBlock);
-  end
+ end
   numBlock = numBlock+1;
 
 end
